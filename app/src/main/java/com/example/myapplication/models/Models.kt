@@ -1,7 +1,4 @@
-//SeverlApp_CENAMAD/app/src/main/java/com/example/severlapp_cenamad/MainActivity.kt
-/**
- * Entidades para CENAMAD Explorer (MVP)
- */
+package com.example.severlapp_cenamad.models
 
 data class LineaInvestigacion(
     val id: Int,
