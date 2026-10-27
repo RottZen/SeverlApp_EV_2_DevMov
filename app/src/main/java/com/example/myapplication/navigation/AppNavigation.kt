@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.DetalleLineaScreen
+import com.example.myapplication.ui.DetalleProyectoScreen
 import com.example.severlapp_cenamad.ui.HomeScreen
 @Composable
 fun AppNavigation() {
@@ -19,11 +20,12 @@ fun AppNavigation() {
         composable(route = Screen.Home.route) {
             HomeScreen(
                 onLineaClick = { idLinea ->
-                    // Navega a detalle de línea pasando el ID (Tarjeta 6)[cite: 2, 4]
+                    // Navega a detalle de línea pasando el ID (Tarjeta 6)
                     navController.navigate(Screen.DetalleLinea.createRoute(idLinea))
                 },
                 onProyectoClick = { idProyecto ->
-                    // Opcional: Aquí puedes redirigir al detalle del proyecto más adelante
+                    // Navega a detalle del proyecto y validación de E-Token (Tarjeta 7)
+                    navController.navigate(Screen.DetalleProyecto.createRoute(idProyecto))
                 }
             )
         }
@@ -37,7 +39,22 @@ fun AppNavigation() {
             DetalleLineaScreen(
                 idLinea = idLinea,
                 onProyectoClick = { idProyecto ->
-                    // Aquí prepararás la siguiente navegación hacia la tarjeta de E-Token
+                    // Navegación hacia la tarjeta de E-Token (Tarjeta 7)
+                    navController.navigate(Screen.DetalleProyecto.createRoute(idProyecto))
+                }
+            )
+        }
+
+        // Pantalla de Detalle de Proyecto y Simulación E-Token (Tarjeta 7)
+        composable(
+            route = Screen.DetalleProyecto.route,
+            arguments = listOf(navArgument("idProyecto") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val idProyecto = backStackEntry.arguments?.getInt("idProyecto") ?: 0
+            DetalleProyectoScreen(
+                idProyecto = idProyecto,
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
