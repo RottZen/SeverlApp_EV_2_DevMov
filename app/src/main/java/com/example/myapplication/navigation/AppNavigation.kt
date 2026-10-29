@@ -1,4 +1,6 @@
+
 package com.example.myapplication.navigation
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -7,7 +9,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.DetalleLineaScreen
 import com.example.myapplication.ui.DetalleProyectoScreen
+import com.example.myapplication.ui.PantallaIndicadores
 import com.example.severlapp_cenamad.ui.HomeScreen
+
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -26,6 +30,10 @@ fun AppNavigation() {
                 onProyectoClick = { idProyecto ->
                     // Navega a detalle del proyecto y validación de E-Token (Tarjeta 7)
                     navController.navigate(Screen.DetalleProyecto.createRoute(idProyecto))
+                },
+                onIndicadoresClick = {
+                    // Navega a los gráficos de indicadores (Tarjeta 8)
+                    navController.navigate(Screen.Indicadores.route)
                 }
             )
         }
@@ -58,7 +66,11 @@ fun AppNavigation() {
                 }
             )
         }
+
+        // Pantalla de Indicadores con gráficos (Tarjeta 8)
+        composable(route = Screen.Indicadores.route) {
+            PantallaIndicadores()
+        }
     }
 }
-
-
+ 

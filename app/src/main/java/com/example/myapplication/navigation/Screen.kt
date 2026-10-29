@@ -1,4 +1,5 @@
 package com.example.myapplication.navigation
+
 sealed class Screen(val route: String) {
     object Home : Screen("home")
     object DetalleLinea : Screen("detalle_linea/{idLinea}") {
@@ -7,4 +8,6 @@ sealed class Screen(val route: String) {
     object DetalleProyecto : Screen("detalle_proyecto/{idProyecto}") {
         fun createRoute(idProyecto: Int) = "detalle_proyecto/$idProyecto"
     }
+    // Tarjeta 8: gráficos de indicadores
+    object Indicadores : Screen("indicadores")
 }

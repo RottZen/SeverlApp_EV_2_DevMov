@@ -1,5 +1,6 @@
 package com.example.severlapp_cenamad.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,10 +24,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.R
 import com.example.severlapp_cenamad.models.LineaInvestigacion
 import com.example.severlapp_cenamad.models.Proyecto
 import com.example.severlapp_cenamad.repository.Repository
@@ -32,7 +38,8 @@ import com.example.severlapp_cenamad.repository.Repository
 @Composable
 fun HomeScreen(
     onLineaClick: (Int) -> Unit = {},
-    onProyectoClick: (Int) -> Unit = {}
+    onProyectoClick: (Int) -> Unit = {},
+    onIndicadoresClick: () -> Unit = {}
 ) {
     var texto by remember { mutableStateOf("") }
 
@@ -56,13 +63,26 @@ fun HomeScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "CENAMAD Explorer",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        // Título a la izquierda y logo a la derecha
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "CENAMAD Explorer",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Image(
+                painter = painterResource(id = R.drawable.arbol),
+                contentDescription = "Logo CENAMAD",
+                modifier = Modifier.size(64.dp)
+            )
+        }
 
         OutlinedTextField(
             value = texto,
@@ -71,8 +91,18 @@ fun HomeScreen(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .padding(bottom = 12.dp)
         )
+
+        // Tarjeta 8: acceso a los gráficos de indicadores
+        Button(
+            onClick = onIndicadoresClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Text("Ver indicadores")
+        }
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp),
