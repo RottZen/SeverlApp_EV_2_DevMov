@@ -55,9 +55,22 @@ object Repository {
     fun getPublicacionesByProyecto(idProyecto: Int): List<Publicacion> = publicaciones.filter { it.idProyecto == idProyecto }
 
     fun buscarProyectos(query: String): List<Proyecto> {
-        if (query.isBlank()) return proyectos
+        val termino = query.trim()
+        if (termino.isEmpty()) return proyectos
+
         return proyectos.filter {
-            it.titulo.contains(query, ignoreCase = true) || it.anio.toString().contains(query)
+            val investigador = getInvestigadorById(it.idInvestigador)
+            val linea = investigador?.let { persona -> getLineaById(persona.idLinea) }
+
+            listOf(
+                it.titulo,
+                it.anio.toString(),
+                it.estado,
+                investigador?.nombre,
+                investigador?.especialidad,
+                linea?.titulo,
+                linea?.descripcion
+            ).any { campo -> campo?.contains(termino, ignoreCase = true) == true }
         }
     }
 }

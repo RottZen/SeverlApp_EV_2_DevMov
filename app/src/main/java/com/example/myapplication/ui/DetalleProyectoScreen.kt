@@ -1,6 +1,5 @@
 package com.example.myapplication.ui
 
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,21 +23,16 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.viewmodel.DetalleProyectoViewModel
 import com.example.severlapp_cenamad.models.Publicacion
-import com.example.severlapp_cenamad.repository.Repository
-
-private const val PREFS_NAME = "cenamad_prefs"
-private const val KEY_TOKEN_VALIDADO = "token_validado"
 
 @Composable
 fun DetalleProyectoScreen(
@@ -46,40 +40,19 @@ fun DetalleProyectoScreen(
     onBackClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val prefs = remember {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val viewModel: DetalleProyectoViewModel = viewModel()
+    val uiState = viewModel.uiState
+    val proyecto = uiState.proyecto
+    val investigador = uiState.investigador
+    val publicaciones = uiState.publicaciones
+
+    LaunchedEffect(idProyecto) {
+        viewModel.load(idProyecto)
     }
-
-    // Persistencia Local (SharedPreferences)
-    var tokenValidado by remember {
-        mutableStateOf(prefs.getBoolean(KEY_TOKEN_VALIDADO, false))
-    }
-
-    // Estado para controlar el despliegue del AlertDialog
-    var mostrarModal by remember { mutableStateOf(false) }
-    var codigoIngresado by remember { mutableStateOf("") }
-    var errorValidacion by remember { mutableStateOf(false) }
-    var documentoEnDescarga by remember { mutableStateOf("") }
-
-    val proyecto = Repository.getProyectoById(idProyecto)
-    val investigador = proyecto?.let { Repository.getInvestigadorById(it.idInvestigador) }
-    val publicaciones = Repository.getPublicacionesByProyecto(idProyecto)
-
-    // Lógica de inicio de descarga simulada
-    val ejecutarDescarga: (String, Boolean) -> Unit = { tituloDoc, requiereToken ->
-        documentoEnDescarga = tituloDoc
-        if (requiereToken && !tokenValidado) {
-            // Condiciona la apertura del modal a la ausencia del valor persistido
-            codigoIngresado = ""
-            errorValidacion = false
-            mostrarModal = true
-        } else {
-            // Ya validado previamente en SharedPreferences o no requiere token
-            Toast.makeText(
-                context,
-                "Descarga simulada iniciada: $tituloDoc",
-                Toast.LENGTH_SHORT
-            ).show()
+    LaunchedEffect(uiState.mensaje) {
+        uiState.mensaje?.let { mensaje ->
+            Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+            viewModel.consumeMessage()
         }
     }
 
@@ -98,9 +71,13 @@ fun DetalleProyectoScreen(
 
         if (proyecto == null) {
             Text(
-                text = "Proyecto no encontrado",
+                text = if (uiState.isLoaded) "Proyecto no encontrado" else "Cargando proyecto...",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error
+                color = if (uiState.isLoaded) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
             return@Column
         }
@@ -170,7 +147,7 @@ fun DetalleProyectoScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = if (tokenValidado) {
+                containerColor = if (uiState.tokenValidado) {
                     MaterialTheme.colorScheme.secondaryContainer
                 } else {
                     MaterialTheme.colorScheme.tertiaryContainer
@@ -191,22 +168,18 @@ fun DetalleProyectoScreen(
                         fontSize = 13.sp
                     )
                     Text(
-                        text = if (tokenValidado) {
-                            "Autorizado en memoria persistente"
+                        text = if (uiState.tokenValidado) {
+                            "Autorización de demostración guardada en este dispositivo"
                         } else {
-                            "No validado (solicitará modal)"
+                            "No validado (se solicitará el código de demostración)"
                         },
                         fontSize = 12.sp
                     )
                 }
 
-                if (tokenValidado) {
+                if (uiState.tokenValidado) {
                     OutlinedButton(
-                        onClick = {
-                            prefs.edit().putBoolean(KEY_TOKEN_VALIDADO, false).apply()
-                            tokenValidado = false
-                            Toast.makeText(context, "E-Token revocado para pruebas", Toast.LENGTH_SHORT).show()
-                        }
+                        onClick = viewModel::revokeToken
                     ) {
                         Text("Reiniciar", fontSize = 12.sp)
                     }
@@ -248,7 +221,9 @@ fun DetalleProyectoScreen(
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Button(
-                                onClick = { ejecutarDescarga("Ficha Técnica ${proyecto.titulo}", true) },
+                                onClick = {
+                                    viewModel.requestDownload("Ficha Técnica ${proyecto.titulo}", true)
+                                },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("Descargar Ficha Técnica")
@@ -261,7 +236,7 @@ fun DetalleProyectoScreen(
                     PublicacionItem(
                         publicacion = pub,
                         onDescargarClick = {
-                            ejecutarDescarga(pub.titulo, pub.requiereToken)
+                            viewModel.requestDownload(pub.titulo, pub.requiereToken)
                         }
                     )
                 }
@@ -270,9 +245,9 @@ fun DetalleProyectoScreen(
     }
 
     // Modal AlertDialog para validación de E-Token (Tarjeta 7)
-    if (mostrarModal) {
+    if (uiState.mostrarModal) {
         AlertDialog(
-            onDismissRequest = { mostrarModal = false },
+            onDismissRequest = viewModel::dismissTokenDialog,
             title = {
                 Text(
                     text = "Validación E-Token Requerida",
@@ -282,23 +257,20 @@ fun DetalleProyectoScreen(
             text = {
                 Column {
                     Text(
-                        text = "El documento \"$documentoEnDescarga\" requiere validación de seguridad institucional.",
+                        text = "El documento \"${uiState.documentoEnDescarga}\" requiere un E-Token para esta demostración.",
                         fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
-                        value = codigoIngresado,
-                        onValueChange = {
-                            codigoIngresado = it
-                            if (errorValidacion) errorValidacion = false
-                        },
-                        label = { Text("Código E-Token (ej: TOKEN2026)") },
+                        value = uiState.codigoIngresado,
+                        onValueChange = viewModel::onCodigoChanged,
+                        label = { Text("Código E-Token de demostración (ej: TOKEN2026)") },
                         singleLine = true,
-                        isError = errorValidacion,
-                        supportingText = if (errorValidacion) {
+                        isError = uiState.errorValidacion,
+                        supportingText = if (uiState.errorValidacion) {
                             {
                                 Text(
-                                    text = "Código obligatorio. Ingrese un token válido.",
+                                    text = "Código incorrecto. Ingrese el E-Token válido.",
                                     color = MaterialTheme.colorScheme.error,
                                     fontSize = 11.sp
                                 )
@@ -309,28 +281,12 @@ fun DetalleProyectoScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        if (codigoIngresado.trim().isNotEmpty()) {
-                            // Persistencia en SharedPreferences tras validación exitosa
-                            prefs.edit().putBoolean(KEY_TOKEN_VALIDADO, true).apply()
-                            tokenValidado = true
-                            mostrarModal = false
-                            Toast.makeText(
-                                context,
-                                "¡E-Token validado con éxito! Descargando: $documentoEnDescarga",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            errorValidacion = true
-                        }
-                    }
-                ) {
+                Button(onClick = viewModel::validateToken) {
                     Text("Validar y Descargar")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarModal = false }) {
+                TextButton(onClick = viewModel::dismissTokenDialog) {
                     Text("Cancelar")
                 }
             }
