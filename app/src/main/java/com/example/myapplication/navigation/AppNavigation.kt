@@ -69,7 +69,7 @@ fun AppNavigation() {
 
         // Pantalla de Indicadores con gráficos (Tarjeta 8)
         composable(route = Screen.Indicadores.route) {
-            PantallaIndicadores()
+            PantallaIndicadores(onBackClick = { navController.popBackStack() })
         }
     }
 }
