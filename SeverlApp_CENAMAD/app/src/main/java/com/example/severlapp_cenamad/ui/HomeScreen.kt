@@ -4,14 +4,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.severlapp_cenamad.models.LineaInvestigacion
 import com.example.severlapp_cenamad.models.Proyecto
-import com.example.severlapp_cenamad.repository.Repository
+import com.example.severlapp_cenamad.viewmodel.HomeViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -20,24 +21,8 @@ fun HomeScreen(
     onLineaClick: (Int) -> Unit = {},
     onProyectoClick: (Int) -> Unit = {}
 ) {
-    // 1. Estado del Buscador
-    var texto by remember { mutableStateOf("") }
-
-    // 2. Filtrado dinámico derivado de 'texto'
-    val proyectosFiltrados = remember(texto) {
-        Repository.buscarProyectos(texto)
-    }
-
-    val lineasFiltradas = remember(texto) {
-        if (texto.isBlank()) {
-            Repository.lineas
-        } else {
-            Repository.lineas.filter {
-                it.titulo.contains(texto, ignoreCase = true) ||
-                        it.descripcion.contains(texto, ignoreCase = true)
-            }
-        }
-    }
+    val viewModel: HomeViewModel = viewModel()
+    val uiState = viewModel.uiState
 
 
     Column(
@@ -54,8 +39,8 @@ fun HomeScreen(
         )
 
         OutlinedTextField(
-            value = texto,
-            onValueChange = { texto = it },
+            value = uiState.query,
+            onValueChange = viewModel::onQueryChanged,
             label = { Text("Buscar por título, año o palabra clave...") },
             singleLine = true,
             modifier = Modifier
@@ -67,7 +52,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            if (lineasFiltradas.isNotEmpty()) {
+            if (uiState.lineas.isNotEmpty()) {
                 item {
                     Text(
                         text = "Líneas de Investigación",
@@ -77,31 +62,31 @@ fun HomeScreen(
                     )
                 }
 
-                items(lineasFiltradas) { linea ->
+                items(uiState.lineas) { linea ->
                     LineaCard(linea = linea, onClick = { onLineaClick(linea.id) })
                 }
             }
 
             item {
                 Text(
-                    text = if (texto.isBlank()) "Proyectos Destacados" else "Resultados de Proyectos (${proyectosFiltrados.size})",
+                    text = if (uiState.query.isBlank()) "Proyectos Destacados" else "Resultados de Proyectos (${uiState.proyectos.size})",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
                 )
             }
 
-            if (proyectosFiltrados.isEmpty()) {
+            if (uiState.proyectos.isEmpty()) {
                 item {
                     Text(
-                        text = "No se encontraron coincidencia con \"$texto\"",
+                        text = "No se encontraron coincidencia con \"${uiState.query}\"",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
             } else {
-                items(proyectosFiltrados) { proyecto ->
+                items(uiState.proyectos) { proyecto ->
                     ProyectoCard(proyecto = proyecto, onClick = { onProyectoClick(proyecto.id) })
                 }
             }

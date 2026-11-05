@@ -13,30 +13,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.viewmodel.DetalleLineaViewModel
 import com.example.severlapp_cenamad.models.Investigador
 import com.example.severlapp_cenamad.models.Proyecto
-import com.example.severlapp_cenamad.repository.Repository
 
 @Composable
 fun DetalleLineaScreen(
     idLinea: Int,
     onProyectoClick: (Int) -> Unit = {}
 ) {
-    // Obtenemos los datos desde el repositorio estático
-    val linea = Repository.getLineaById(idLinea)
-    val investigadores = Repository.getInvestigadoresByLinea(idLinea)
-
-    // Filtramos los proyectos que pertenecen a los investigadores de esta línea
-    val proyectos = Repository.proyectos.filter { proyecto ->
-        investigadores.any { it.id == proyecto.idInvestigador }
-    }
+    val viewModel: DetalleLineaViewModel = viewModel(key = "linea-$idLinea")
+    val uiState = viewModel.load(idLinea)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        if (linea != null) {
+        if (uiState.linea != null) {
             Text(
                 text = "Detalle en Línea:",
                 fontSize = 13.sp,
@@ -44,14 +39,14 @@ fun DetalleLineaScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = linea.titulo,
+                text = uiState.linea.titulo,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = linea.descripcion,
+                text = uiState.linea.descripcion,
                 fontSize = 14.sp,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -70,7 +65,7 @@ fun DetalleLineaScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(investigadores) { investigador ->
+            items(uiState.investigadores) { investigador ->
                 InvestigadorAvatarItem(investigador = investigador)
             }
         }
@@ -89,7 +84,7 @@ fun DetalleLineaScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(proyectos) { proyecto ->
+            items(uiState.proyectos) { proyecto ->
                 ProyectoDetalleItem(
                     proyecto = proyecto,
                     onClick = { onProyectoClick(proyecto.id) }

@@ -8,13 +8,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.severlapp_cenamad.repository.Repository
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.viewmodel.IndicadoresViewModel
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.XAxis
@@ -28,27 +29,16 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.ColorTemplate
 
-private fun proyectosPorLinea(): List<Pair<String, Int>> =
-    Repository.lineas.map { linea ->
-        val idsInvestigadores = Repository.getInvestigadoresByLinea(linea.id).map { it.id }
-        val total = Repository.proyectos.count { it.idInvestigador in idsInvestigadores }
-        // Etiqueta corta para que quepa en el eje X (ej. "Bioproductos")
-        linea.titulo.substringBefore(" ") to total
-    }
-
-private fun proyectosPorEstado(): List<Pair<String, Int>> =
-    Repository.proyectos
-        .groupBy { it.estado }
-        .map { (estado, lista) -> estado to lista.size }
-
 private val formatoEntero = object : ValueFormatter() {
     override fun getFormattedValue(value: Float): String = value.toInt().toString()
 }
 
 
 @Composable
-fun GraficoBarrasProyectosPorLinea(modifier: Modifier = Modifier) {
-    val datos = remember { proyectosPorLinea() }
+fun GraficoBarrasProyectosPorLinea(
+    datos: List<Pair<String, Int>>,
+    modifier: Modifier = Modifier
+) {
     val colorTexto = MaterialTheme.colorScheme.onSurface.toArgb()
 
     AndroidView(
@@ -98,8 +88,10 @@ fun GraficoBarrasProyectosPorLinea(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun GraficoCircularProyectosPorEstado(modifier: Modifier = Modifier) {
-    val datos = remember { proyectosPorEstado() }
+fun GraficoCircularProyectosPorEstado(
+    datos: List<Pair<String, Int>>,
+    modifier: Modifier = Modifier
+) {
     val colorTexto = MaterialTheme.colorScheme.onSurface.toArgb()
 
     AndroidView(
@@ -137,13 +129,23 @@ fun GraficoCircularProyectosPorEstado(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun PantallaIndicadores(modifier: Modifier = Modifier) {
+fun PantallaIndicadores(
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val viewModel: IndicadoresViewModel = viewModel()
+    val uiState = viewModel.uiState
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        TextButton(onClick = onBackClick) {
+            Text("← Volver")
+        }
+
         Text(
             text = "Indicadores de investigación",
             style = MaterialTheme.typography.headlineSmall
@@ -154,13 +156,13 @@ fun PantallaIndicadores(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
         )
-        GraficoBarrasProyectosPorLinea()
+        GraficoBarrasProyectosPorLinea(uiState.proyectosPorLinea)
 
         Text(
             text = "Proyectos por estado",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
         )
-        GraficoCircularProyectosPorEstado()
+        GraficoCircularProyectosPorEstado(uiState.proyectosPorEstado)
     }
 }

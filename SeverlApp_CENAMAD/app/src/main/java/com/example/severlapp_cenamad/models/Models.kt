@@ -1,4 +1,5 @@
-SeverlApp_CENAMAD/app/src/main/java/com/example/severlapp_cenamad/MainActivity.kt
+package com.example.severlapp_cenamad.models
+
 /**
  * Entidades para CENAMAD Explorer (MVP)
  */

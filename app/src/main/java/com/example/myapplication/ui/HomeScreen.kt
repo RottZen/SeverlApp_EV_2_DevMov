@@ -20,10 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -33,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 import com.example.severlapp_cenamad.models.LineaInvestigacion
 import com.example.severlapp_cenamad.models.Proyecto
-import com.example.severlapp_cenamad.repository.Repository
+import com.example.myapplication.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
@@ -41,22 +38,8 @@ fun HomeScreen(
     onProyectoClick: (Int) -> Unit = {},
     onIndicadoresClick: () -> Unit = {}
 ) {
-    var texto by remember { mutableStateOf("") }
-
-    val proyectosFiltrados = remember(texto) {
-        Repository.buscarProyectos(texto)
-    }
-
-    val lineasFiltradas = remember(texto) {
-        if (texto.isBlank()) {
-            Repository.lineas
-        } else {
-            Repository.lineas.filter {
-                it.titulo.contains(texto, ignoreCase = true) ||
-                        it.descripcion.contains(texto, ignoreCase = true)
-            }
-        }
-    }
+    val viewModel: HomeViewModel = viewModel()
+    val uiState = viewModel.uiState
 
     Column(
         modifier = Modifier
@@ -85,8 +68,8 @@ fun HomeScreen(
         }
 
         OutlinedTextField(
-            value = texto,
-            onValueChange = { texto = it },
+            value = uiState.query,
+            onValueChange = viewModel::onQueryChanged,
             label = { Text("Buscar por título, año o palabra clave...") },
             singleLine = true,
             modifier = Modifier
@@ -108,7 +91,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            if (lineasFiltradas.isNotEmpty()) {
+            if (uiState.lineas.isNotEmpty()) {
                 item {
                     Text(
                         text = "Líneas de Investigación",
@@ -118,31 +101,31 @@ fun HomeScreen(
                     )
                 }
 
-                items(lineasFiltradas) { linea ->
+                items(uiState.lineas) { linea ->
                     LineaCard(linea = linea, onClick = { onLineaClick(linea.id) })
                 }
             }
 
             item {
                 Text(
-                    text = if (texto.isBlank()) "Proyectos Destacados" else "Resultados de Proyectos (${proyectosFiltrados.size})",
+                    text = if (uiState.query.isBlank()) "Proyectos Destacados" else "Resultados de Proyectos (${uiState.proyectos.size})",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
                 )
             }
 
-            if (proyectosFiltrados.isEmpty()) {
+            if (uiState.proyectos.isEmpty()) {
                 item {
                     Text(
-                        text = "No se encontraron coincidencias para \"$texto\"",
+                        text = "No se encontraron coincidencias para \"${uiState.query}\"",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
             } else {
-                items(proyectosFiltrados) { proyecto ->
+                items(uiState.proyectos) { proyecto ->
                     ProyectoCard(proyecto = proyecto, onClick = { onProyectoClick(proyecto.id) })
                 }
             }
